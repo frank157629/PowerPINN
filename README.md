@@ -79,3 +79,4 @@ If you use this repository in your research, please cite the following paper:
 ## License
 This project is licensed under the MIT License.
 
+# PowerPINN
