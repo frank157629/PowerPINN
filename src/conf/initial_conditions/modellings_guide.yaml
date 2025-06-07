@@ -25,3 +25,7 @@
 - name: "SM6_AVR_GOV"
   keys: ["theta", "omega", "E_d_dash", "E_q_dash", "E_d_dash_dash", "E_q_dash_dash", "R_F", "V_r", "E_fd", "P_sv", "P_m"]
   full_name: "Synchronous Machine with 6 states, Automatic Voltage Regulator and Governor"
+
+- name: "PLL_ROM"
+  keys: ["delta", "omega"]
+  full_name: "PLL Reduced-Order Model with 2 states"

@@ -1,0 +1,35 @@
+# src/conf/setup_pll_dataset.yaml
+
+wandb:
+  api_key: "none"
+  project: "PLL-ROM"
+
+time: 1.0
+num_of_points: 1001
+
+modelling_method: "Dynamical"
+
+model:
+  model_flag: "PLL_ROM"
+
+dataset:
+  path:       "dataset/PLL_ROM/dataset_v1.pkl"
+  number: 1
+  shuffle:    true
+  split_ratio: 0.8
+
+  # collocation-points 相关
+  new_coll_points_flag:  true
+  num_collocation_groups: 10
+
+nn:
+  type:        "DynamicNN"
+  activation:  "tanh"
+  num_epochs:  2000
+
+dirs:
+  params_dir:            ${hydra:runtime.cwd}/src/conf/params/PLL_ROM
+  init_conditions_dir:   ${hydra:runtime.cwd}/src/conf/initial_conditions/PLL_ROM
+  dataset_dir:           ${hydra:runtime.cwd}/dataset/PLL_ROM
+
+seed: 42

@@ -1,0 +1,9 @@
+delta0:
+  type: "Uniform"   # sample δ₀ uniformly
+  min:  -1.5708     # –π/2 (rad)
+  max:   1.5708     # +π/2 (rad)
+
+omega0:
+  type: "Uniform"   # sample ω₀ uniformly
+  min:  -10.0       # (pu)
+  max:   10.0       # (pu)

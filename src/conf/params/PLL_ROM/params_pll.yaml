@@ -1,0 +1,8 @@
+k_p:     0.025      # PLL proportional gain
+k_i:     1.5        # PLL integral gain
+L_g:     0.0518845     # Equivalent inductance (pu) = 16.3/(2π·50)
+r_Lg:    1.0        # Equivalent resistance (pu)
+i_d_c:   1.0        # d-axis current (pre-fault, pu)
+i_q_c:  -0.1        # q-axis current (pre-fault, pu)
+v_g:     690.0      # Grid voltage magnitude (peak, V)
+omega_g: 314.159265   # Grid angular frequency (rad/s) = 2π·50
