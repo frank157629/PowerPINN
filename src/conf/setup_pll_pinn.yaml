@@ -15,8 +15,8 @@ physics: ${params_pll}
 # PINN 网络及优化器配置
 nn:
   type: "DynamicNN"
-  input_dim: null
-  output_dim: null
+  input_dim: 3
+  output_dim: 2
   activation:   "tanh"
   learning_rate: 0.01
   weight_data: 1.0      # λd

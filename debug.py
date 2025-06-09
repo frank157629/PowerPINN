@@ -8,6 +8,9 @@ from omegaconf import OmegaConf
 from src.pll_nn.pll_model import Network
 from src.ode.pll_rom import pll_rom
 
+import wandb
+wandb.init(mode="disabled")
+
 # ---- 1) 加载你的 pkl 数据 ----
 pkl_path = Path("dataset/PLL_ROM/dataset_v2.pkl")
 with pkl_path.open("rb") as f:
@@ -36,7 +39,7 @@ train_loader = DataLoader(train_ds, batch_size=x_all.size(0), shuffle=True)
 # ---- 5) 配置并实例化超简版 PINN ----
 # 我们直接 hard-code 超参数，也可以从 YAML 里读
 input_dim, output_dim = 3, 2
-hidden_dim, hidden_layers = 16, 2
+hidden_dim, hidden_layers = 64, 4
 lr, epochs = 1e-3, 100
 
 model = Network(input_size=input_dim,
@@ -57,7 +60,7 @@ x_all = x_all.to(device)
 y_all = y_all.to(device)
 x_col = x_col.to(device)
 
-# ---- 6) 训练打印每轮 loss ----
+# ---- 6) 训练打印每轮 loss ----f
 for epoch in range(epochs):
     model.train()
     # 只一个 batch
@@ -95,3 +98,4 @@ for epoch in range(epochs):
           f"pde_data={loss_pde_data.item():.3e}  "
           f"pde_col={loss_pde_col.item():.3e}  "
           f"total={loss.item():.3e}")
+

@@ -39,7 +39,8 @@ class Network(nn.Module):
         # 把 Rahul 的 residual 逻辑贴进来，用 autograd  + pll_rom
         grads = torch.autograd.grad(
             y_pred, x, torch.ones_like(y_pred),
-            create_graph=True, retain_graph=True
+            create_graph=True
+            , retain_graph=True
         )[0]
         # 2) 物理右端 f(δ,ω) via pll_rom
         #    pll_rom(t, [δ,ω], params) → d[δ,ω]/dt
@@ -106,7 +107,7 @@ class PinnA(nn.Module): # DISCARD IT, OUTPUT IS WRONG
         #time = torch.where(time < 0.5, time, 0.5*torch.ones_like(time))
         y = x[:,1:] + y*time
         return y
-    
+
 
 class ResidualBlock(nn.Module):
     """

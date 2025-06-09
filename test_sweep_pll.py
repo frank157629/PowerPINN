@@ -44,6 +44,17 @@ def train(config=None):
     ds_cfg.seed = sweep_cfg.seed
     dataset = DataSampler(ds_cfg)
 
+    # test_sweep_pll.py 里的 train()
+    dataset = DataSampler(ds_cfg)
+
+    col = dataset.x_train_col
+    print("⏺ collocation points count:", col.shape)
+    print("   time min/max:", col[:, 0].min().item(), "/", col[:, 0].max().item())
+    print("   δ,ω ranges:", col[:, 1:].min(0).values.tolist(), "/", col[:, 1:].max(0).values.tolist())
+
+    ic = col[col[:, 0] == 0]
+    print("→ 初始条件点 (t==0) 数量:", ic.shape[0])
+
     # 2) 加载 PINN config
     pinn_cfg = OmegaConf.load("src/conf/setup_pll_pinn.yaml")
     params = OmegaConf.load("src/conf/params_pll.yaml")

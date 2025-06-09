@@ -11,6 +11,13 @@ from torch.utils.data import DataLoader, TensorDataset
 from hydra.utils import to_absolute_path
 import glob
 
+def standardize_states(x, minus, divide):
+    t = x[:, :1]                  # 时间列，不动
+    states = x[:, 1:]             # δ,ω 列
+    μ_states = minus[1:].unsqueeze(0)    # [1,2]
+    σ_states = divide[1:].unsqueeze(0)   # [1,2]
+    states = (states - μ_states) / σ_states
+    return torch.cat([t, states], dim=1).requires_grad_(True)
 
 class DataSampler:
     """
@@ -98,10 +105,29 @@ class DataSampler:
             self.minus_input, self.divide_input = self.define_minus_divide(self.x_train, self.x_train_col)
             self.minus_input = torch.nn.Parameter(self.minus_input, requires_grad=False)
             self.divide_input = torch.nn.Parameter(self.divide_input, requires_grad=False)
+            self.x_train = self.transform_input(self.x_train)
+            self.x_train_col = self.transform_input(self.x_train_col)
+            if hasattr(self, "x_val"):
+                self.x_val = self.transform_input(self.x_val)
         if self.cfg.dataset.transform_output != "None":
             self.minus_target, self.divide_target = self.define_minus_divide(self.y_train, torch.empty(0))
             self.minus_target = torch.nn.Parameter(self.minus_target, requires_grad=False)
             self.divide_target = torch.nn.Parameter(self.divide_target, requires_grad=False)
+        print("========= DEBUG DATA DISTRIBUTION =========")
+        print("Before normalization:")
+        print("x_train[:5]", self.x_train[:5])
+        print("y_train[:5]", self.y_train[:5])
+        print("Mean/std x:", self.x_train.mean(0), self.x_train.std(0))
+        print("Mean/std y:", self.y_train.mean(0), self.y_train.std(0))
+
+        # 如果你有原始数据可以对比（归一化前的 x_train_raw, y_train_raw），更好
+        # print("x_train_raw[:5]", self.x_train_raw[:5])
+
+        print("After normalization:")
+        print("x_train[:5]", self.transform_input(self.x_train[:5]))
+        print("y_train[:5]", self.transform_output(self.y_train[:5]))
+        print("Minus/divide for x:", getattr(self, "minus_input", "None"), getattr(self, "divide_input", "None"))
+        print("Minus/divide for y:", getattr(self, "minus_target", "None"), getattr(self, "divide_target", "None"))
 
     def load_data(self):
         """
@@ -330,43 +356,75 @@ class DataSampler:
             raise Exception("Flag not implemented")
         return data
 
+    # def transform_input(self, input):
+    #     """
+    #     This function transforms the input data
+    #     """
+    #     flag = "Input"  # Flag to transform the input data
+    #     if self.cfg.dataset.transform_input != "None":
+    #         if self.cfg.dataset.transform_input == "standard":
+    #             print("Standardizing input data for training")
+    #         elif self.cfg.dataset.transform_input == "MinMax":
+    #             print("Normalizing input data for training")
+    #         elif self.cfg.dataset.transform_input == "MinMax2":
+    #             print("Normalizing2 input data for training")
+    #             flag = "Input2"
+    #         else:
+    #             raise Exception("Transformation not found")
+    #         input = self.transform_data(input, flag)
+    #         return input.clone().detach().to(self.device).requires_grad_(True)
+    #     else:
+    #         return input
+
+
+
+    # def detransform_input(self, input):
+    #     """
+    #     This function detransforms the input data
+    #     """
+    #     flag = "Input"
+    #     if self.cfg.dataset.transform_input != "None":
+    #         if self.cfg.dataset.transform_input == "Std":
+    #             print("Unstandardizing input data ")
+    #         elif self.cfg.dataset.transform_input == "MinMax":
+    #             print("Unnormalizing input data")
+    #         elif self.cfg.dataset.transform_input == "MinMax2":
+    #             print("Unnormalizing input data")
+    #             flag = "Input2"
+    #         else:
+    #             raise Exception("Transformation not found")
+    #         input = self.detransform_data(input, flag)
+    #     return input.clone().detach().to(self.device).requires_grad_(True)
+
     def transform_input(self, input):
         """
-        This function transforms the input data
+        只对状态变量（第1列及以后）做标准化，t不变
         """
-        flag = "Input"  # Flag to transform the input data
         if self.cfg.dataset.transform_input != "None":
-            if self.cfg.dataset.transform_input == "Std":
-                print("Standardizing input data for training")
-            elif self.cfg.dataset.transform_input == "MinMax":
-                print("Normalizing input data for training")
-            elif self.cfg.dataset.transform_input == "MinMax2":
-                print("Normalizing2 input data for training")
-                flag = "Input2"
-            else:
-                raise Exception("Transformation not found")
-            input = self.transform_data(input, flag)
-            return input.clone().detach().to(self.device).requires_grad_(True)
+            t = input[:, 0:1]
+            states = input[:, 1:]
+            mean = self.minus_input[1:]
+            std = self.divide_input[1:]
+            states = (states - mean) / std
+            result = torch.cat([t, states], dim=1)
+            return result.clone().detach().to(self.device).requires_grad_(True)
         else:
             return input
 
     def detransform_input(self, input):
         """
-        This function detransforms the input data
+        只对状态变量（第1列及以后）做反标准化，t不变
         """
-        flag = "Input"
         if self.cfg.dataset.transform_input != "None":
-            if self.cfg.dataset.transform_input == "Std":
-                print("Unstandardizing input data ")
-            elif self.cfg.dataset.transform_input == "MinMax":
-                print("Unnormalizing input data")
-            elif self.cfg.dataset.transform_input == "MinMax2":
-                print("Unnormalizing input data")
-                flag = "Input2"
-            else:
-                raise Exception("Transformation not found")
-            input = self.detransform_data(input, flag)
-        return input.clone().detach().to(self.device).requires_grad_(True)
+            t = input[:, 0:1]
+            states = input[:, 1:]
+            mean = self.minus_input[1:]
+            std = self.divide_input[1:]
+            states = states * std + mean
+            result = torch.cat([t, states], dim=1)
+            return result.clone().detach().to(self.device).requires_grad_(True)
+        else:
+            return input
 
     def detransform_output(self, output):
         """
@@ -374,7 +432,7 @@ class DataSampler:
         """
         flag = "Output"
         if self.cfg.dataset.transform_output != "None":
-            if self.cfg.dataset.transform_output == "Std":
+            if self.cfg.dataset.transform_output == "standard":
                 pass
                 # print("Unstandardizing output data for testing")
             elif self.cfg.dataset.transform_output == "MinMax":
@@ -393,7 +451,7 @@ class DataSampler:
         """
         flag = "Output"
         if self.cfg.dataset.transform_output != "None":
-            if self.cfg.dataset.transform_output == "Std":
+            if self.cfg.dataset.transform_output == "standard":
                 pass
                 # print("Standardizing output data for training")
             elif self.cfg.dataset.transform_output == "MinMax":

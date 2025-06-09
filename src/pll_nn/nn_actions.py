@@ -128,7 +128,8 @@ class NeuralNetworkActions:
             self.model.train()
             total_loss = 0.0
 
-            for (x_data, y_data) in dataloader:
+            # for (x_data, y_data) in dataloader:
+            for batch_idx, (x_data, y_data) in enumerate(dataloader):
                 x_data = x_data.to(self.device)
                 y_data = y_data.to(self.device)
 
@@ -161,6 +162,16 @@ class NeuralNetworkActions:
                 y_ic_true = self.model.get_initial_condition_values(x_ic)
                 diff_ic = y_ic_pred - y_ic_true
                 loss_ic = diff_ic.norm(p=2, dim=1).mean()
+                if epoch % 100 == 0 and batch_idx == 0:  # 只在每100个epoch的第一个batch打印
+                    print("==== IC DEBUG INFO ====")
+                    print("IC points: ", x_ic[:5])
+                    print("IC output (pred_ic): ", y_ic_pred[:5])
+                    print("IC target (real_ic): ", y_ic_true[:5])
+                    print("IC loss: ", loss_ic.item())
+                    print("nan in pred_ic:", torch.isnan(y_ic_pred).sum().item())
+                    print("inf in pred_ic:", torch.isinf(y_ic_pred).sum().item())
+                    print("nan in real_ic:", torch.isnan(y_ic_true).sum().item())
+                    print("inf in real_ic:", torch.isinf(y_ic_true).sum().item())
                 # Combine losses with dynamic weights
                 # weight_data, weight_pde, weight_ic = self.weighting.get_weights()
 
@@ -194,6 +205,8 @@ class NeuralNetworkActions:
                 #     break
             else:
                 wandb.log({"epoch": epoch, "train_loss": total_loss / len(dataloader)})
+        print("All unique t in collocation_points:", torch.unique(collocation_points[:, 0]))
+        print("Any t==0?", (collocation_points[:, 0] == 0).sum().item())
 
     def validate(self, validation_loader):
         """

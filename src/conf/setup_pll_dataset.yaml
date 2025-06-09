@@ -2,7 +2,7 @@
 
 # ——— 顶层全局参数 ———
 time: 1               # 从 0.0s 到 1.0s
-num_of_points: 10   # 一共取 1000 个点
+num_of_points: 100   # 一共取 1000 个点
 modelling_method: true
 
 wandb:
@@ -15,7 +15,7 @@ dirs:
   params_dir: "src/conf"
 
 dataset:
-  number: 2
+  number: 3
   shuffle: true
   split_ratio: 0.8
   validation_flag: true
@@ -26,7 +26,7 @@ dataset:
   transform_output: "standard"     # 同上，对输出做相同处理
 
 sampling:
-  n_samples: 2        # 生成 10 条随机 (δ₀, ω₀) 轨迹
+  n_samples: 5        # 生成 10 条随机 (δ₀, ω₀) 轨迹
 
 model:
   model_flag: "PLL_ROM"
