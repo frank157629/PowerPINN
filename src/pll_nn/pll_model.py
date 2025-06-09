@@ -2,35 +2,8 @@ import torch.nn as nn
 import torch
 import torch.nn.functional as F
 from kan import KAN
+from src.ode.pll_rom import pll_rom
 
-class Net(nn.Module):
-    """
-    A class to represent a neural network model.
-    """
-    def __init__(self, input_size, hidden_size, output_size):
-        super(Net, self).__init__()
-        #torch.set_default_dtype(torch.float64)
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.relu = nn.Tanh()
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, hidden_size)
-        self.fc4 = nn.Linear(hidden_size, hidden_size)
-        self.fc5 = nn.Linear(hidden_size, output_size)
-
-    def forward(self, x):
-        """
-        Forward pass of the neural network.
-        Args:
-            x (torch.Tensor): Input tensor.
-        Returns:
-            torch.Tensor: Output tensor.
-        """
-        x = self.relu(self.fc1(x))
-        x = self.relu(self.fc2(x))
-        x = self.relu(self.fc3(x))
-        x = self.relu(self.fc4(x))
-        x = self.fc5(x)
-        return x
 
 class Network(nn.Module):
     """
@@ -61,6 +34,23 @@ class Network(nn.Module):
             x = F.tanh(self.hidden[i](x))
         x = self.output(x)
         return x
+
+    def compute_pde_residual(self, x, y_pred, params):
+        # 把 Rahul 的 residual 逻辑贴进来，用 autograd  + pll_rom
+        grads = torch.autograd.grad(
+            y_pred, x, torch.ones_like(y_pred),
+            create_graph=True, retain_graph=True
+        )[0]
+        # 2) 物理右端 f(δ,ω) via pll_rom
+        #    pll_rom(t, [δ,ω], params) → d[δ,ω]/dt
+        dy_phys = pll_rom(x[:, 0:1], y_pred, params)  # [N,2]
+        return grads[:, :2] - dy_phys  # 取前两列残差
+
+    def get_initial_condition_values(self, x_ic):
+        δ0 = x_ic[:, 1:2]
+        # ω0 = torch.zeros_like(δ0)
+        ω0 = x_ic[:, 2:3]
+        return torch.cat([δ0, ω0], dim=1)
     
 class Kalm(nn.Module):
     """
@@ -173,5 +163,5 @@ class FullyConnectedResNet(nn.Module):
         return x
 
 
-
+print(pll_rom)
 

@@ -6,7 +6,6 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import torch
 from omegaconf import OmegaConf
-
 # Import your PLL-ROM ODE function
 from src.ode.pll_rom import pll_rom
 
@@ -39,7 +38,7 @@ class PLLDatasetGenerator:
 
         # Directory under which we will create / load PLL data
         # e.g., dataset_dir = "/path/to/PowerPINN/dataset"
-        self.dataset_dir = os.path.join(dataset_dir, "PLL_ROM")
+        self.dataset_dir = dataset_dir
 
         # Ensure the base folder exists
         os.makedirs(self.dataset_dir, exist_ok=True)

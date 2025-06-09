@@ -3,7 +3,7 @@ import torch.nn as nn
 
 from omegaconf import OmegaConf
 import wandb
-from src.pll_nn.pll_model import Net, Network, PinnA, Kalm, FullyConnectedResNet
+from src.pll_nn.pll_model import Network, PinnA, Kalm, FullyConnectedResNet
 import os
 import numpy as np
 import pandas as pd

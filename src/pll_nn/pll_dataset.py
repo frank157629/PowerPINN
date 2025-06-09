@@ -7,8 +7,9 @@ import os
 import wandb
 from omegaconf import OmegaConf
 from pyDOE import lhs
-from src.dataset.create_dataset_functions import ODE_modelling
 from torch.utils.data import DataLoader, TensorDataset
+from hydra.utils import to_absolute_path
+import glob
 
 
 class DataSampler:
@@ -67,6 +68,8 @@ class DataSampler:
 
     def __init__(self, cfg):
         self.cfg = cfg
+        self.dataset_dir = to_absolute_path(cfg.dirs.dataset_dir)
+        self.number_of_dataset = cfg.dataset.number
         self.idx = 0
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model_flag = cfg.model.model_flag  # 'SM_IB' or 'SM' or 'SM_AVR' or 'SM_GOV'
@@ -105,20 +108,20 @@ class DataSampler:
         Load data from file.
 
         Returns:
-            sol (list): The loaded data.
+            sol (list): The loaded trajectories.
+            input_dim (int): Dimensionality of one trajectory.
+            total_trajectories (int): Number of trajectories loaded.
         """
-        model_flag = self.model_flag  # 'SM_IB' or 'SM' or 'SM_AVR' or 'SM_GOV'
-        number_of_dataset = self.cfg.dataset.number  # Define the number of the dataset to load
-        name = model_flag + '/dataset_v' + str(number_of_dataset) + '.pkl'
-        print(model_flag, self.cfg.dirs.dataset_dir)
-        dataset_path = "./" + self.cfg.dirs.dataset_dir + "/" + name  # os.path.join(self.cfg.dirs.dataset_dir, name) # Define the path to the dataset
-        print("Loading data from: ", dataset_path)
+        # 构造文件名：dataset_v{编号}.pkl
+        name = f"dataset_v{self.number_of_dataset}.pkl"
+        # 拼出绝对路径
+        dataset_path = os.path.join(self.dataset_dir, name)
+        print("Loading data from:", dataset_path)
+        # 反序列化
         with open(dataset_path, 'rb') as f:
             sol = pickle.load(f)
         input_dim = len(sol[0])
         total_trajectories = len(sol)
-        if self.shuffle:
-            np.random.shuffle(sol)  # shuffle the trajectories as they are ordered
         return sol, input_dim, total_trajectories
 
     def define_train_val_data2(self, perc_of_data, perc_of_col_data, num_of_skip_data_points, num_of_col_points,
@@ -194,7 +197,6 @@ class DataSampler:
         y_train_list = torch.tensor(())
         for training_sample in data:
             training_sample = torch.tensor(training_sample, dtype=torch.float32)  # convert the trajectory to tensor
-            y_train = training_sample[1:].T.clone().detach().requires_grad_(True)  # target data
             if time_limit != 0:
                 training_sample_l = training_sample.T
                 training_sample_l = training_sample_l[
@@ -275,9 +277,11 @@ class DataSampler:
         return mean, std
 
     def define_minus_divide(self, data, data_col):
-        if self.cfg.dataset.transform_input == "Std" or self.cfg.dataset.transform_output == "Std":
+        if self.cfg.dataset.transform_input == "standard" or self.cfg.dataset.transform_output == "standard":
             minus, divide = self.find_std_values(data, data_col)
-        if self.cfg.dataset.transform_input == "MinMax" or self.cfg.dataset.transform_output == "MinMax" or self.cfg.dataset.transform_input == "MinMax2" or self.cfg.dataset.transform_output == "MinMax2":
+            print("input mean  =", minus)
+            print("input std   =", divide)
+        elif self.cfg.dataset.transform_input == "MinMax" or self.cfg.dataset.transform_output == "MinMax" or self.cfg.dataset.transform_input == "MinMax2" or self.cfg.dataset.transform_output == "MinMax2":
             min, max = self.find_norm_values(data, data_col)
             minus = min
             divide = max - min
@@ -415,7 +419,7 @@ class DataSampler:
               the 3 columns are [time, δ₀, ω₀].
         """
         # 1) find the single YAML that defines delta0/omega0 for PLL_ROM
-        yml_dir = os.path.join(self.cfg.dirs.init_conditions_dir, self.cfg.model.model_flag)
+        yml_dir = self.cfg.dirs.init_conditions_dir
         yml_files = glob.glob(os.path.join(yml_dir, '*.yaml'))
         if not yml_files:
             raise FileNotFoundError(f"No YAML files found in {yml_dir}")
@@ -610,8 +614,6 @@ class TrajectorySampler:
         y_train_list = torch.tensor(())
         for training_sample in data:
             training_sample = torch.tensor(training_sample, dtype=torch.float32)
-            y_train = training_sample[1:].T.clone().detach().requires_grad_(True)
-            training_sample_l = training_sample.T
             training_sample_l = training_sample_l[
                 training_sample_l[:, 0] <= time_limit].T  # limit the time to time_limit
             y_train = training_sample_l[1:].T.clone().detach()

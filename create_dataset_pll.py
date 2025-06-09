@@ -7,6 +7,7 @@ from omegaconf import OmegaConf
 
 # Import our PLLDatasetGenerator which handles ODE solving and .pkl saving
 from src.dataset.create_dataset_pll_functions import PLLDatasetGenerator
+from hydra.utils import to_absolute_path
 
 
 @hydra.main(config_path="src/conf", config_name="setup_pll_dataset.yaml", version_base=None)
@@ -34,7 +35,7 @@ def main(config):
     #    - init_cond.yaml     (contains delta0.min, delta0.max, omega0.min, omega0.max)
     params_path = os.path.join(
         runtime_dir,
-        config.dirs.params_dir,
+        to_absolute_path(config.dirs.params_dir),
         "params_pll.yaml"
     )
     init_cond_path = os.path.join(

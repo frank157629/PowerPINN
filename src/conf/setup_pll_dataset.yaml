@@ -1,35 +1,33 @@
-# src/conf/setup_pll_dataset.yaml
+# conf/setup_pll_dataset.yaml
+
+# ——— 顶层全局参数 ———
+time: 1               # 从 0.0s 到 1.0s
+num_of_points: 10   # 一共取 1000 个点
+modelling_method: true
 
 wandb:
-  api_key: "none"
+  api_key: "c26f0418182418f6712b79b4457de4faa81b7524"
   project: "PLL-ROM"
 
-time: 1.0
-num_of_points: 1001
+dirs:
+  dataset_dir: "dataset/PLL_ROM"
+  init_conditions_dir: "src/conf/initial_conditions/PLL_ROM"
+  params_dir: "src/conf"
 
-modelling_method: "Dynamical"
+dataset:
+  number: 2
+  shuffle: true
+  split_ratio: 0.8
+  validation_flag: true
+  new_coll_points_flag: true
+  perc_of_data: 1.0
+  perc_of_col_points: 1.0
+  transform_input: "standard"     # 不做归一化，也可以改成 "Std" 或 "MinMax"
+  transform_output: "standard"     # 同上，对输出做相同处理
+
+sampling:
+  n_samples: 2        # 生成 10 条随机 (δ₀, ω₀) 轨迹
 
 model:
   model_flag: "PLL_ROM"
 
-dataset:
-  path:       "dataset/PLL_ROM/dataset_v1.pkl"
-  number: 1
-  shuffle:    true
-  split_ratio: 0.8
-
-  # collocation-points 相关
-  new_coll_points_flag:  true
-  num_collocation_groups: 10
-
-nn:
-  type:        "DynamicNN"
-  activation:  "tanh"
-  num_epochs:  2000
-
-dirs:
-  params_dir:            ${hydra:runtime.cwd}/src/conf/params/PLL_ROM
-  init_conditions_dir:   ${hydra:runtime.cwd}/src/conf/initial_conditions/PLL_ROM
-  dataset_dir:           ${hydra:runtime.cwd}/dataset/PLL_ROM
-
-seed: 42
